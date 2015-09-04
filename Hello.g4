@@ -7,20 +7,29 @@ r  : test+ ;         // match keyword hello followed by an identifier
 test: STRING (NEWLINE)*;
 
 
-vrhs: ;
-vrhs_content: ;
+vrhs: WHITESPACES? vrhs_content ( WHITESPACES vrhs_content )*? WHITESPACES? ;
+vrhs_content: funclet_without_parameter
+					| multi_command_line
+					| refrence
+					| STRING
+					| STRING_WITH_UNDERSCORES ;
+
+refrence: AT (STRING|STRING_WITH_UNDERSCORES) AT ;
+
+multi_command_line: command_line+ ;
 
 command_line: MINUS STRING ;
 
 funclet_without_parameter: funclet_name LEFTPARENTHESE WHITESPACES? RIGHTPARENTHESE ;
 
-funclet_name: CONJUNCTION STRING
+funclet_name: CONJUNCTION (STRING|STRING_WITH_UNDERSCORES)
 					| CONJUNCTION string_with_colon
 					;
-string_with_colon: STRING (COLONS STRING)+;
+string_with_colon: (STRING|STRING_WITH_UNDERSCORES) (COLONS (STRING|STRING_WITH_UNDERSCORES))+;
 
 
 STRING: (WORDS)+;
+STRING_WITH_UNDERSCORES: (WORDS|UNDERSCORES)+;
 STRING_WITH_REGULARSYMBOLS: (WORDS|REGULARSYMBOLS)+ ;
 WORDS: (CHARS|NUMBERS)+;
 NUMBERS: (DIGITS|FLOATS)+;
@@ -37,7 +46,7 @@ AT: '@';
 DOUBLEQUOTATION: '"';
 LEFTPARENTHESE: '(';
 RIGHTPARENTHESE: ')';
-UNDERSCORE: '_';
+UNDERSCORES: [_]+;
 WHITESPACES: [ ]+;
 COLONS: [:]+;
 
