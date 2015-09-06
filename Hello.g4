@@ -8,23 +8,37 @@ test: STRING (NEWLINE)*;
 
 
 vrhs: WHITESPACES? vrhs_content ( WHITESPACES vrhs_content )*? WHITESPACES? ;
-vrhs_content: funclet_without_parameter
-					| multi_command_line
-					| refrence
-					| STRING
-					 ;
+vrhs_content: funclet_regular 
+				|funclet_without_parameter
+				| multi_command_line
+				| refrence
+				| STRING
+				;
 
-refrence: AT STRING AT ;
+refrence: AT refrence_name AT ;
+refrence_name: STRING;
 
 multi_command_line: command_line+ ;
 
-command_line: MINUS STRING ;
+command_line: MINUS command (WHITESPACES (command|command_splited_by_comma))+?;
+		
+command_splited_by_comma: command (COMMA command)+;
+command:STRING;
 
-funclet_without_parameter: funclet_name LEFTPARENTHESE WHITESPACES? RIGHTPARENTHESE ;
+//funclet section
+funclet_regular:CONJUNCTION funclet_name LEFTPARENTHESE WHITESPACES? funclet_parameters (WHITESPACES? COMMA WHITESPACES? funclet_parameters)*? RIGHTPARENTHESE;
+funclet_without_parameter:CONJUNCTION funclet_name LEFTPARENTHESE WHITESPACES? RIGHTPARENTHESE ;
 
-funclet_name: CONJUNCTION STRING
-					| CONJUNCTION string_with_colon
-					;
+funclet_name: string_with_colon
+			| STRING
+			;
+funclet_parameters: DOUBLEQUOTATION WHITESPACES? parameter_content WHITESPACES? DOUBLEQUOTATION
+					| DOUBLEQUOTATION WHITESPACES? DOUBLEQUOTATION
+					|funclet_without_parameter
+					|STRING;
+parameter_content: command_line
+					| funclet_without_parameter
+					| STRING;
 string_with_colon: STRING (COLONS STRING)+;
 
 
@@ -43,12 +57,15 @@ REGULARSYMBOLS: ['|.|#|/|<|>|$|%|+|^]+;
 MINUS: '-'|'--';
 CONJUNCTION: '&';
 AT: '@';
-DOUBLEQUOTATION: '"';
+DOUBLEQUOTATION: '\"';
 LEFTPARENTHESE: '(';
 RIGHTPARENTHESE: ')';
 UNDERSCORES: [_]+;
 WHITESPACES: [ ]+;
 COLONS: [:]+;
+EQUALMARK: '=';
+COMMA:',';
+
 
 NEWLINE: ('\r' ? '\n')+ ;
 WS : [\t\s\w]+ -> skip ; // skip spaces, tabs, newlines
