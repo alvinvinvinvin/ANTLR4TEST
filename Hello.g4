@@ -2,14 +2,14 @@
  * Define a grammar called Hello
  */
 grammar Hello;
-r  : test+ ;         // match keyword hello followed by an identifier
+r  : test+ EOF;         // match keyword hello followed by an identifier
 
 test: STRING (NEWLINE)*;
 
 
-vrhs: WHITESPACES? vrhs_content ( WHITESPACES vrhs_content )*? WHITESPACES? ;
-vrhs_content: funclet_regular 
-				|funclet_without_parameter
+vrhs: WHITESPACES? vrhs_content ( WHITESPACES vrhs_content )* NEWLINE ;
+vrhs_content: funclet_without_parameter
+				|funclet_regular 
 				| multi_command_line
 				| refrence
 				| STRING
@@ -20,10 +20,11 @@ refrence_name: STRING;
 
 multi_command_line: command_line+ ;
 
-command_line: MINUS command (WHITESPACES (command|command_splited_by_comma))+?;
+command_line: MINUS command (WHITESPACES (command_following_parameters|command_splited_by_comma))+?;
 		
-command_splited_by_comma: command (COMMA command)+;
+command_splited_by_comma: command_following_parameters (COMMA command_following_parameters)+;
 command:STRING;
+command_following_parameters: STRING;
 
 //funclet section
 funclet_regular:CONJUNCTION funclet_name LEFTPARENTHESE WHITESPACES? funclet_parameters (WHITESPACES? COMMA WHITESPACES? funclet_parameters)*? RIGHTPARENTHESE;
@@ -32,10 +33,11 @@ funclet_without_parameter:CONJUNCTION funclet_name LEFTPARENTHESE WHITESPACES? R
 funclet_name: string_with_colon
 			| STRING
 			;
-funclet_parameters: DOUBLEQUOTATION WHITESPACES? parameter_content WHITESPACES? DOUBLEQUOTATION
-					| DOUBLEQUOTATION WHITESPACES? DOUBLEQUOTATION
-					|funclet_without_parameter
-					|STRING;
+funclet_parameters: WHITESPACES? DOUBLEQUOTATION WHITESPACES? parameter_content WHITESPACES? DOUBLEQUOTATION WHITESPACES?
+					|WHITESPACES? DOUBLEQUOTATION WHITESPACES? DOUBLEQUOTATION WHITESPACES?
+					|WHITESPACES? funclet_without_parameter WHITESPACES?
+					|WHITESPACES? STRING WHITESPACES?
+					;
 parameter_content: command_line
 					| funclet_without_parameter
 					| STRING;
