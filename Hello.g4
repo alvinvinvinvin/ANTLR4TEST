@@ -4,7 +4,9 @@
 grammar Hello;
 r  : test+ EOF;         // match keyword hello followed by an identifier
 
-test: STRING (NEWLINE)*;
+test: STRING (NEWLINE)*
+	| vrhs
+	;
 
 
 vrhs: WHITESPACES? vrhs_content ( WHITESPACES vrhs_content )* NEWLINE ;
@@ -20,7 +22,7 @@ refrence_name: STRING;
 
 multi_command_line: command_line+ ;
 
-command_line: MINUS command (WHITESPACES (command_following_parameters|command_splited_by_comma))+?;
+command_line: MINUS command (WHITESPACES (command_following_parameters|command_splited_by_comma))*;
 		
 command_splited_by_comma: command_following_parameters (COMMA command_following_parameters)+;
 command:STRING;
