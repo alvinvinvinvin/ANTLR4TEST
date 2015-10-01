@@ -41,8 +41,8 @@ doublequotation_kv_pair:DOUBLEQUOTATION kv_pair DOUBLEQUOTATION;
 key:key_head WHITESPACES? COLON WHITESPACES? key_parameter
 	|key_head
 	;
-key_head:STRING;
-key_parameter:STRING;
+key_head:(STRING|NUMBERS);
+key_parameter:(STRING|NUMBERS);
 /**
  * Value
  * 
@@ -58,7 +58,7 @@ vrhs_content: kv_pair
 			| multi_command_line
 			| quotation
 			|STRING_WITH_REGULARSYMBOLS
-			| STRING
+			| (STRING|NUMBERS)
 			;
 
 /**
@@ -71,7 +71,7 @@ http_link:HTTP_LINK;
  * Quotation
  */
 quotation: AT quotation_name AT ;
-quotation_name: STRING;
+quotation_name: (STRING|NUMBERS);
 
 /**
  * Command line
@@ -81,8 +81,8 @@ multi_command_line: command_line+ ;
 command_line: MINUS_OR_DOUBLEMINUS command (WHITESPACES (command_following_parameters|command_splited_by_comma))*;
 		
 command_splited_by_comma: command_following_parameters (COMMA command_following_parameters)+;
-command:STRING;
-command_following_parameters: STRING;
+command:(STRING|NUMBERS);
+command_following_parameters: (STRING|NUMBERS);
 
 
 /**
@@ -98,25 +98,26 @@ funclet_regular:CONJUNCTION funclet_name LEFTPARENTHESE WHITESPACES? funclet_par
 funclet_without_parameter:CONJUNCTION funclet_name LEFTPARENTHESE WHITESPACES? RIGHTPARENTHESE ;
 
 funclet_name: string_with_colon
-			| STRING
+			| (STRING|NUMBERS)
 			;
 funclet_parameters: funclet_regular math_formula*
 					|funclet_without_parameter math_formula*
 					|parameter_doublequotation
-					|STRING
+					|(STRING|NUMBERS)
 					;
-parameter_doublequotation: DOUBLEQUOTATION WHITESPACES? parameter_content? WHITESPACES? DOUBLEQUOTATION;
+parameter_doublequotation: DOUBLEQUOTATION WHITESPACES? parameter_content? (WHITESPACES parameter_content)* WHITESPACES? DOUBLEQUOTATION;
 
 parameter_content: command_line
 					| funclet_without_parameter
-					| STRING
+					| (STRING|NUMBERS)
 					;
 /**
  * Useful parser rules
  */
-string_with_colon: STRING (DOUBLECOLONS STRING)+;
+string_with_colon: (STRING|NUMBERS) (DOUBLECOLONS (STRING|NUMBERS))+;
 math_formula:WHITESPACES? MATH_OPERATORS WHITESPACES? NUMBERS;
 test_number:STRING;
+test_digit:NUMBERS;
 
 /**
  * Lexer rules
@@ -125,22 +126,22 @@ test_number:STRING;
  * Character rules
  * 
  */
-STRING: (WORDS|UNDERSCORES)+;
-STRING_WITH_REGULARSYMBOLS: (WORDS|REGULARSYMBOLS) ;
-WORDS: (CHAR|NUMBERS)+;
+STRING: (CHAR|UNDERSCORES)+;
+STRING_WITH_REGULARSYMBOLS: (CHAR|REGULARSYMBOLS)+ ;
+//WORDS: (CHAR|NUMBERS)+;
 NUMBERS: (DIGIT|FLOAT)+;
 HTTP_LINK:HTTP_HEAD ~[\r\n]* (EOF|'\r'? '\n');
 
 fragment HTTP_HEAD:'http://';
 fragment CHAR: [a-zA-Z];
-fragment DIGIT:[0-9];
-fragment FLOAT: [-+]?[0-9]*'.'?[0-9]+;
+DIGIT:[0-9];
+FLOAT: [-+]?[0-9]*'.'?[0-9]+;
 
 
 /**
  * Symbol rules
  */
-fragment REGULARSYMBOLS: ['|<|>|$|^]+;
+REGULARSYMBOLS: ['|<|>|$|^]+;
 fragment PLUS:'+';
 fragment STAR:'*';
 fragment PERCENTAGE:'%';
