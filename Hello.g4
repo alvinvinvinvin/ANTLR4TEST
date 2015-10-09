@@ -12,11 +12,11 @@ file: (section|NEWLINE)*;
  * Sections are the basic elements of INI file. 
  * It contains section name and section body.
  */
-section: section_name section_body;
+section: section_name NEWLINE+ section_body?;
 /**
  * Section name
  */
-section_name:LEFTSQUAREBRACKET WHITESPACES? section_name_head (WHITESPACES? COLON WHITESPACES? section_name_variable WHITESPACES?)? WHITESPACES? RIGHTSQUAREBRACKET WHITESPACES? NEWLINE;
+section_name:LEFTSQUAREBRACKET WHITESPACES? section_name_head (WHITESPACES? COLON WHITESPACES? section_name_variable WHITESPACES?)? WHITESPACES? RIGHTSQUAREBRACKET WHITESPACES?;
 //Does section name allow numbers?
 section_name_head:STRING (WHITESPACES STRING)*;
 section_name_variable:STRING (WHITESPACES STRING)*;
@@ -26,14 +26,13 @@ section_name_variable:STRING (WHITESPACES STRING)*;
  * Basically section body is consisted by Key-Value pairs
  */
 
-section_body: kv_pair*
-			 | NEWLINE*;
+section_body: (kv_pair NEWLINE)+;
 
 /**
  * Key-Value pair
  */
 
-kv_pair: WHITESPACES? key WHITESPACES? EQUALSIGN WHITESPACES? vrhs WHITESPACES? NEWLINE;
+kv_pair: WHITESPACES? key WHITESPACES? EQUALSIGN WHITESPACES? vrhs? WHITESPACES?;
 doublequotation_kv_pair:DOUBLEQUOTATION kv_pair DOUBLEQUOTATION;
 
 /**
@@ -41,28 +40,62 @@ doublequotation_kv_pair:DOUBLEQUOTATION kv_pair DOUBLEQUOTATION;
  * 
  * The left hand side element of Key-Value pair
  */
-key:key_head WHITESPACES? COLON WHITESPACES? key_parameter
+key:key_head COLON key_parameter
 	|key_head
 	;
-key_head:(STRING|NUMBERS);
-key_parameter:(STRING|NUMBERS);
+key_head:STRING;
+key_parameter:STRING;
 /**
  * Value
  * 
  * The right hand side element of Key-Value pair
  */
-vrhs:WHITESPACES? vrhs_content ( WHITESPACES vrhs_content )*;
-vrhs_content: kv_pair
-			|doublequotation_kv_pair
+vrhs: vrhs_content (WHITESPACES vrhs_content )*
+		|plain_text_with_dollar_quotation;
+vrhs_content: 
+			eot_section
+			|path
 			|funclet_without_parameter
 			|funclet_regular 
 			|http_link
-			| command_line
-			| multi_command_line
+			|kv_pair
+			|doublequotation_kv_pair
+//			| command_line
+//			| multi_command_line
+			| quoted_string
 			| quotation
-			| (STRING|NUMBERS)
+			| comma_split_string
+			| STRING
+			| DOT
+			| dollar_quotation
+			|email
 			;
+/**
+ * plain text
+ */
+ plain_text_with_dollar_quotation: (plain_text|dollar_quotation)+;
+ plain_text: (STRING|WHITESPACES|COLON|BACKWARD_SLASH)+;
+/**
+ * Dollar symbol quotation
+ */
+dollar_quotation: DOLLAR STRING;
 
+/**
+ * Quoted string
+ */
+quoted_string: DOUBLEQUOTATION (STRING|WHITESPACES|COMMA|DOT)* DOUBLEQUOTATION;
+
+/**
+ * Comma split string
+ */
+ comma_split_string: STRING WHITESPACES? (COMMA WHITESPACES? STRING)+ ;
+
+/**
+ * Email
+ */
+email: email_address AT domain_name;
+email_address: (STRING|DOT)+;
+domain_name: STRING DOT STRING;
 /**
  * Path
  * 
@@ -70,9 +103,14 @@ vrhs_content: kv_pair
  * also could contain funclets and their parameters.
  */
  
- path: (normal_path|funclet_regular|funclet_without_parameter)+ (DOT extension)? ;
- normal_path: STRING MINUS* STRING
- 			|WHITESPACES;
+ path: BACKWARD_SLASH? path_name+  (BACKWARD_SLASH  path_name+)+ (DOT extension)? 
+ 		| BACKWARD_SLASH;
+ path_name: 
+ 			normal_path_name
+ 			|funclet_regular
+ 			|funclet_without_parameter
+ 			|dollar_quotation;
+ normal_path_name: STRING (WHITESPACES STRING)*;
  extension:STRING;
 
 /**
@@ -85,18 +123,18 @@ http_link:HTTP_LINK;
  * Quotation
  */
 quotation: AT quotation_name AT ;
-quotation_name: (STRING|NUMBERS)+;
+quotation_name: STRING;
 
 /**
  * Command line
  */
-multi_command_line: command_line+ ;
-
-command_line: MINUS_OR_DOUBLEMINUS command (WHITESPACES (command_following_parameters|command_splited_by_comma))*;
-		
-command_splited_by_comma: command_following_parameters (COMMA command_following_parameters)+;
-command:(STRING|NUMBERS);
-command_following_parameters: (STRING|NUMBERS);
+//multi_command_line: command_line+ ;
+//
+//command_line: MINUS_OR_DOUBLEMINUS command (WHITESPACES (command_following_parameters|command_splited_by_comma))*;
+//		
+//command_splited_by_comma: command_following_parameters (COMMA command_following_parameters)+;
+//command:(STRING|NUMBERS);
+//command_following_parameters: (STRING|NUMBERS);
 
 
 /**
@@ -108,30 +146,44 @@ command_following_parameters: (STRING|NUMBERS);
  * functions we see in JAVA.
  * 
  */
-funclet_regular:CONJUNCTION funclet_name LEFTPARENTHESE WHITESPACES? funclet_parameters (WHITESPACES? COMMA WHITESPACES? funclet_parameters)* WHITESPACES? RIGHTPARENTHESE;
+funclet_regular:CONJUNCTION funclet_name LEFTPARENTHESE WHITESPACES? (funclet_parameter|funclet_parameters) (WHITESPACES? COMMA WHITESPACES? (funclet_parameter|funclet_parameters))* WHITESPACES? RIGHTPARENTHESE;
 funclet_without_parameter:CONJUNCTION funclet_name LEFTPARENTHESE WHITESPACES? RIGHTPARENTHESE ;
 
 funclet_name: string_with_colon
-			| (STRING|NUMBERS)
+			| STRING
 			;
-funclet_parameters: funclet_regular math_formula*
+funclet_parameters: funclet_parameter+;
+funclet_parameter: funclet_regular math_formula*
 					|funclet_without_parameter math_formula*
 					|parameter_doublequotation
 					|quotation
-					|(STRING|NUMBERS)
+					|STRING
+					|DOT
+					|WHITESPACES
 					;
 parameter_doublequotation: DOUBLEQUOTATION WHITESPACES? parameter_content? (WHITESPACES parameter_content)* WHITESPACES? DOUBLEQUOTATION;
 
-parameter_content: command_line
-					| funclet_without_parameter
+parameter_content: 
+					 funclet_without_parameter
 					|quotation
-					| (STRING|NUMBERS)+
+					|comma_split_string
+					|STRING
+					|DOT
 					;
+
+/**
+ * EOT section
+ */
+ eot_section: EOT_STARTER eot_contents EOT_ENDER;
+ eot_contents: ~(EOT_STARTER|EOT_ENDER)* ;
+ 
+EOT_STARTER: '<<EOT';
+EOT_ENDER: 'EOT';
 /**
  * Useful parser rules
  */
 string_with_colon: STRING (DOUBLECOLONS STRING)+;
-math_formula:WHITESPACES? MATH_OPERATORS WHITESPACES? NUMBERS;
+math_formula:WHITESPACES? MATH_OPERATORS WHITESPACES? STRING;
 
 /**
  * Lexer rules
@@ -140,15 +192,13 @@ math_formula:WHITESPACES? MATH_OPERATORS WHITESPACES? NUMBERS;
  * Character rules
  * 
  */
-STRING: (CHAR|UNDERSCORES|REGULARSYMBOLS|BACKWARD_SLASH|NUMBERS)+;
-//STRING_WITH_REGULARSYMBOLS: (CHAR|REGULARSYMBOLS)+ ;
-//STRING_WITH_WHITESPACES_AND_MINUSES:(CHAR|WHITESPACES|MINUS)+;
-//WORDS: (CHAR|NUMBERS)+;
+STRING: (CHAR|UNDERSCORES|REGULARSYMBOLS|NUMBERS|MINUS)+;
+
 NUMBERS: (DIGIT|FLOAT)+;
 //HTTP_LINK:HTTP_HEAD ~[\r\n|\n]* (EOF|('\r'? '\n'));
-HTTP_LINK:HTTP_HEAD (STRING|DOT)+;
+HTTP_LINK:HTTP_HEAD (STRING|DOT)+ (BACKWARD_SLASH (STRING|DOT)+ )*;
 
-fragment HTTP_HEAD:'http://';
+fragment HTTP_HEAD: 'http' 's'? '://';
 fragment CHAR: [a-zA-Z];
 DIGIT:[0-9];
 FLOAT: [-+]?[0-9]*'.'?[0-9]+;
@@ -157,12 +207,12 @@ FLOAT: [-+]?[0-9]*'.'?[0-9]+;
 /**
  * Symbol rules
  */
-REGULARSYMBOLS: ['|<|>|$|^]+;
+REGULARSYMBOLS: ['|<|>|^|+|%]+;
 fragment PLUS:'+';
 fragment STAR:'*';
-fragment PERCENTAGE:'%';
-fragment BACKWARD_SLASH:'/';
+BACKWARD_SLASH:'/';
 DOT:'.';
+DOLLAR: '$';
 fragment UNDERSCORES: [_]+;
 fragment SLASH_DOUBLEQUOTATION:'\"';
 fragment ESCAPED_DOUBLEQUOTATION:'\\"';
@@ -170,7 +220,7 @@ fragment ESCAPED_DOUBLEQUOTATION:'\\"';
 /**
  * Mathematical operators
  */
-MATH_OPERATORS:PLUS|MINUS|STAR|PERCENTAGE;
+MATH_OPERATORS:PLUS|MINUS|STAR;
 
 /**
  * Special symbols
