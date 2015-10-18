@@ -168,6 +168,7 @@ parameter_content:
 					 funclet_without_parameter
 					|quotation
 					|comma_split_string
+					|path
 					|STRING
 					|DOT
 					;
@@ -197,7 +198,7 @@ STRING: (CHAR|UNDERSCORES|REGULARSYMBOLS|NUMBERS|MINUS)+;
 
 NUMBERS: (DIGIT|FLOAT)+;
 //HTTP_LINK:HTTP_HEAD ~[\r\n|\n]* (EOF|('\r'? '\n'));
-HTTP_LINK:HTTP_HEAD (STRING|DOT)+ (BACKWARD_SLASH (STRING|DOT)+ )*;
+HTTP_LINK:HTTP_HEAD (STRING|DOT)+ (BACKWARD_SLASH (STRING|DOT)+ )* BACKWARD_SLASH?;
 
 fragment HTTP_HEAD: 'http' 's'? '://';
 fragment CHAR: [a-zA-Z];
@@ -252,6 +253,6 @@ NEWLINE: ('\r' ? '\n')+ ;
 /**
  * Skips
  */
-COMMENT: '#' ~[\r\n|\n]* (EOF|('\r'? '\n'))  -> skip;
+COMMENT: '#' ~[\r\n|\n]* (EOF|('\r'? '\n')+)  -> skip;
 FORWARDSLASH:'\\' WHITESPACES? NEWLINE WHITESPACES?-> skip;
 
