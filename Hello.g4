@@ -104,6 +104,7 @@ domain_name: STRING DOT STRING;
  */
  
  path: BACKWARD_SLASH? path_name+  (BACKWARD_SLASH  path_name+)+ (DOT extension)? 
+ 		| BACKWARD_SLASH? path_name+ DOT extension
  		| BACKWARD_SLASH;
  path_name: 
  			normal_path_name
