@@ -2,6 +2,11 @@
  * Define a grammar called Hello
  */
 grammar Hello;
+
+tokens {
+  U_SUB
+}
+
 r  : file EOF;         // match keyword hello followed by an identifier
 
 file: (section|NEWLINE)*;
