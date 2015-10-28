@@ -3,11 +3,7 @@
  */
 grammar Hello;
 
-tokens {
-  U_SUB
-}
-
-r  : file EOF;         // match keyword hello followed by an identifier
+r  : file EOF;
 
 file: (section|NEWLINE)*;
 
@@ -17,48 +13,59 @@ file: (section|NEWLINE)*;
  * Sections are the basic elements of INI file. 
  * It contains section name and section body.
  */
-section: section_name NEWLINE+ section_body?;
+section
+	: section_name NEWLINE+ section_body?;
 /**
  * Section name
  */
-section_name:LEFTSQUAREBRACKET WHITESPACES? section_name_head (WHITESPACES? COLON WHITESPACES? section_name_variable WHITESPACES?)? WHITESPACES? RIGHTSQUAREBRACKET WHITESPACES?;
+section_name
+	:WHITESPACES? LEFTSQUAREBRACKET section_name_head ( COLON  section_name_variable )?  RIGHTSQUAREBRACKET WHITESPACES?;
 //Does section name allow numbers?
-section_name_head:STRING (WHITESPACES STRING)*;
-section_name_variable:STRING (WHITESPACES STRING)*;
+section_name_head
+	:WHITESPACES? STRING (WHITESPACES STRING)* WHITESPACES?;
+section_name_variable
+	:WHITESPACES? STRING (WHITESPACES STRING)* WHITESPACES?;
 /**
  * Section body
  * 
  * Basically section body is consisted by Key-Value pairs
  */
 
-section_body: (kv_pair NEWLINE)+;
+section_body
+	: (kv_pair NEWLINE)+;
 
 /**
  * Key-Value pair
  */
 
-kv_pair: WHITESPACES? key WHITESPACES? EQUALSIGN WHITESPACES? vrhs? WHITESPACES?;
-doublequotation_kv_pair:DOUBLEQUOTATION kv_pair DOUBLEQUOTATION;
+kv_pair
+	:  key  EQUALSIGN  vrhs? ;
+doublequotation_kv_pair
+	:DOUBLEQUOTATION kv_pair DOUBLEQUOTATION;
 
 /**
  * Key
  * 
  * The left hand side element of Key-Value pair
  */
-key:key_head COLON key_parameter
-	|key_head
+key
+	: key_head  COLON  key_parameter 
+	| key_head 
 	;
-key_head:STRING;
-key_parameter:STRING;
+key_head
+	:WHITESPACES? STRING WHITESPACES?;
+key_parameter
+	:WHITESPACES? STRING WHITESPACES?;
 /**
  * Value
  * 
  * The right hand side element of Key-Value pair
  */
-vrhs: vrhs_content (WHITESPACES vrhs_content )*
-		|plain_text_with_dollar_quotation;
-vrhs_content: 
-			eot_section
+vrhs
+	:WHITESPACES? vrhs_content (WHITESPACES vrhs_content )* WHITESPACES?
+	|WHITESPACES? plain_text_with_dollar_quotation WHITESPACES?;
+vrhs_content
+			:eot_section
 			|path
 			|funclet_without_parameter
 			|funclet_regular 
@@ -78,29 +85,37 @@ vrhs_content:
 /**
  * plain text
  */
- plain_text_with_dollar_quotation: (plain_text|dollar_quotation)+;
- plain_text: (STRING|WHITESPACES|COLON|BACKWARD_SLASH)+;
+ plain_text_with_dollar_quotation
+ 	: (plain_text|dollar_quotation)+;
+ plain_text
+ 	: (STRING|WHITESPACES|COLON|BACKWARD_SLASH)+;
 /**
  * Dollar symbol quotation
  */
-dollar_quotation: DOLLAR STRING;
+dollar_quotation
+	: DOLLAR STRING;
 
 /**
  * Quoted string
  */
-quoted_string: DOUBLEQUOTATION (STRING|WHITESPACES|COMMA|DOT)* DOUBLEQUOTATION;
+quoted_string
+	: DOUBLEQUOTATION (STRING|WHITESPACES|COMMA|DOT)* DOUBLEQUOTATION;
 
 /**
  * Comma split string
  */
- comma_split_string: STRING WHITESPACES? (COMMA WHITESPACES? STRING)+ ;
+ comma_split_string
+ 	: STRING WHITESPACES? (COMMA WHITESPACES? STRING)+ ;
 
 /**
  * Email
  */
-email: email_address AT domain_name;
-email_address: (STRING|DOT)+;
-domain_name: STRING DOT STRING;
+email
+	: email_address AT domain_name;
+email_address
+	: (STRING|DOT)+;
+domain_name
+	: STRING DOT STRING;
 /**
  * Path
  * 
@@ -108,28 +123,36 @@ domain_name: STRING DOT STRING;
  * also could contain funclets and their parameters.
  */
  
- path: BACKWARD_SLASH? path_name+  (BACKWARD_SLASH  path_name+)+ (DOT extension)? 
- 		| BACKWARD_SLASH? path_name+ DOT extension
- 		| BACKWARD_SLASH;
- path_name: 
- 			normal_path_name
+ path
+ 	: BACKWARD_SLASH? path_name+  (BACKWARD_SLASH  path_name+)+ (DOT extension)? 
+ 	| BACKWARD_SLASH? path_name+ DOT extension
+ 	| BACKWARD_SLASH? path_name+ BACKWARD_SLASH
+ 	| BACKWARD_SLASH
+ 	;
+ path_name
+ 			:normal_path_name
  			|funclet_regular
  			|funclet_without_parameter
  			|dollar_quotation;
- normal_path_name: STRING (WHITESPACES STRING)*;
- extension:STRING;
+ normal_path_name
+ 	: STRING (WHITESPACES STRING)*;
+ extension
+ 	:STRING;
 
 /**
  * http link
  */
 
-http_link:HTTP_LINK;
+http_link
+	:HTTP_LINK;
 
 /**
  * Quotation
  */
-quotation: AT quotation_name AT ;
-quotation_name: STRING;
+quotation
+	: AT quotation_name AT ;
+quotation_name
+	: STRING;
 
 /**
  * Command line
@@ -152,14 +175,19 @@ quotation_name: STRING;
  * functions we see in JAVA.
  * 
  */
-funclet_regular:CONJUNCTION funclet_name LEFTPARENTHESE WHITESPACES? (funclet_parameter|funclet_parameters) (WHITESPACES? COMMA WHITESPACES? (funclet_parameter|funclet_parameters))* WHITESPACES? RIGHTPARENTHESE;
-funclet_without_parameter:CONJUNCTION funclet_name LEFTPARENTHESE WHITESPACES? RIGHTPARENTHESE ;
+funclet_regular
+	:CONJUNCTION funclet_name LEFTPARENTHESE WHITESPACES? (funclet_parameters) (WHITESPACES? COMMA WHITESPACES? (funclet_parameters))* WHITESPACES? RIGHTPARENTHESE;
+funclet_without_parameter
+	:CONJUNCTION funclet_name LEFTPARENTHESE WHITESPACES? RIGHTPARENTHESE ;
 
-funclet_name: string_with_colon
+funclet_name
+			: string_with_colon
 			| STRING
 			;
-funclet_parameters: funclet_parameter+;
-funclet_parameter: funclet_regular math_formula*
+funclet_parameters
+	: funclet_parameter+;
+funclet_parameter
+					: funclet_regular math_formula*
 					|funclet_without_parameter math_formula*
 					|parameter_doublequotation
 					|quotation
@@ -167,10 +195,11 @@ funclet_parameter: funclet_regular math_formula*
 					|DOT
 					|WHITESPACES
 					;
-parameter_doublequotation: DOUBLEQUOTATION WHITESPACES? parameter_content? (WHITESPACES parameter_content)* WHITESPACES? DOUBLEQUOTATION;
+parameter_doublequotation
+	: DOUBLEQUOTATION WHITESPACES? parameter_content? (WHITESPACES parameter_content)* WHITESPACES? DOUBLEQUOTATION;
 
-parameter_content: 
-					 funclet_without_parameter
+parameter_content
+					:funclet_without_parameter
 					|quotation
 					|comma_split_string
 					|path
@@ -181,16 +210,20 @@ parameter_content:
 /**
  * EOT section
  */
- eot_section: EOT_STARTER eot_contents EOT_ENDER;
- eot_contents: ~(EOT_STARTER|EOT_ENDER)* ;
+ eot_section
+ 	: EOT_STARTER eot_contents EOT_ENDER;
+ eot_contents
+ 	: ~(EOT_STARTER|EOT_ENDER)* ;
  
 EOT_STARTER: '<<EOT';
 EOT_ENDER: 'EOT';
 /**
  * Useful parser rules
  */
-string_with_colon: STRING (DOUBLECOLONS STRING)+;
-math_formula:WHITESPACES? MATH_OPERATORS WHITESPACES? STRING;
+string_with_colon
+	: STRING (DOUBLECOLONS STRING)+;
+math_formula
+	:WHITESPACES? MATH_OPERATORS WHITESPACES? STRING;
 
 /**
  * Lexer rules
@@ -258,6 +291,6 @@ NEWLINE: ('\r' ? '\n')+ ;
 /**
  * Skips
  */
-COMMENT: '#' ~[\r\n|\n]* (EOF|('\r'? '\n')+)  -> skip;
+COMMENT: '#' ~[\r\n|\n]* (EOF|NEWLINE)  -> skip;
 FORWARDSLASH:'\\' WHITESPACES? NEWLINE WHITESPACES?-> skip;
 
